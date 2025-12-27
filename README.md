@@ -125,7 +125,7 @@ Missing: `gav://log4j:log4j:1.2.17`
 | 5. Multi-Module | Multiple files, one PR | ✅ PASSED |
 | 6. Non-Standard POMs | pom-dev.xml, pom-prod.xml | ❌ ENGINE LIMITATION |
 
-**Maven Package Updater: 5/6 scenarios (83% coverage)**
+**Maven Package Updater: 4/6 scenarios (67% coverage)**
 
 **Handler is feature-complete!** All failures are engine limitations, not handler issues.
 
