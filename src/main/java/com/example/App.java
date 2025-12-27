@@ -1,11 +1,10 @@
 package com.example;
 
-import org.apache.log4j.Logger;
+import org.apache.commons.fileupload.FileUpload;
 
 public class App {
-    private static final Logger logger = Logger.getLogger(App.class);
-    
     public static void main(String[] args) {
-        logger.info("Testing log4j version from dependencyManagement");
+        FileUpload upload = new FileUpload();
+        System.out.println("Testing commons-fileupload version from dependencyManagement");
     }
 }

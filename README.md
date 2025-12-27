@@ -37,30 +37,30 @@ Maven test repository for Frogbot integration testing.
 <dependencyManagement>
     <dependencies>
         <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-            <version>1.2.17</version>  <!-- Vulnerable! -->
+            <groupId>commons-fileupload</groupId>
+            <artifactId>commons-fileupload</artifactId>
+            <version>1.3.1</version>  <!-- Vulnerable! -->
         </dependency>
     </dependencies>
 </dependencyManagement>
 
 <dependencies>
     <dependency>
-        <groupId>log4j</groupId>
-        <artifactId>log4j</artifactId>
+        <groupId>commons-fileupload</groupId>
+        <artifactId>commons-fileupload</artifactId>
         <!-- Version from dependencyManagement -->
     </dependency>
 </dependencies>
 ```
 
 **Known Issues:**
-- log4j 1.2.17 has multiple CVEs
-- Fix version: 1.2.18+ (or migrate to log4j2)
+- commons-fileupload 1.3.1 has multiple CVEs (CVE-2016-1000031, CVE-2016-3092)
+- Fix version: 1.5+
 
 **What to test:**
-1. Frogbot should detect vulnerability in log4j:1.2.17
+1. Frogbot should detect vulnerability in commons-fileupload:1.3.1
 2. Frogbot should update version in `<dependencyManagement>` section (NOT in `<dependencies>`)
-3. Verify pom.xml is updated: `<version>1.2.17</version>` → `<version>1.2.18</version>` (in dependencyManagement)
+3. Verify pom.xml is updated: `<version>1.3.1</version>` → `<version>1.5</version>` (in dependencyManagement)
 
 **Expected behavior:**
 The updater should detect that the version is managed in `<dependencyManagement>` and update it there, not in the `<dependencies>` section which has no version tag.
