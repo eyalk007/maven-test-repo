@@ -1,10 +1,10 @@
 package com.example;
 
-import org.apache.commons.collections.CollectionUtils;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class App {
     public static void main(String[] args) {
-        System.out.println("Testing commons-collections " + CollectionUtils.EMPTY_COLLECTION);
+        ObjectMapper mapper = new ObjectMapper();
+        System.out.println("Testing jackson-databind " + mapper.version());
     }
 }
-

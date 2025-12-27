@@ -6,19 +6,24 @@
     <modelVersion>4.0.0</modelVersion>
     
     <groupId>com.example</groupId>
-    <artifactId>maven-test-simple</artifactId>
+    <artifactId>maven-test-properties</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
     
-    <name>Maven Test - Simple Vulnerable Dependency</name>
-    <description>Simple test case with one vulnerable dependency</description>
+    <name>Maven Test - Property-Based Version</name>
+    <description>Test case with property-based vulnerable dependency</description>
+    
+    <properties>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+        <jackson.version>2.9.8</jackson.version>
+    </properties>
     
     <dependencies>
         <dependency>
-            <groupId>commons-collections</groupId>
-            <artifactId>commons-collections</artifactId>
-            <version>3.2.1</version>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
         </dependency>
     </dependencies>
 </project>
-
