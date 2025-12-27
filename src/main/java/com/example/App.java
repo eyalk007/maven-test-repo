@@ -1,10 +1,12 @@
 package com.example;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+@SpringBootApplication
 public class App {
     public static void main(String[] args) {
-        ObjectMapper mapper = new ObjectMapper();
-        System.out.println("Testing jackson-databind " + mapper.version());
+        System.out.println("Testing Spring Boot parent version");
+        SpringApplication.run(App.class, args);
     }
 }

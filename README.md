@@ -10,27 +10,42 @@ Maven test repository for Frogbot integration testing.
 
 ---
 
-## Test Case 2: Property-Based Version
+## Test Case 2: Property-Based Version ✅
+
+**Status:** ✅ PASSED
+
+**Result:** Frogbot successfully updated property `<jackson.version>2.9.8</jackson.version>` → `<jackson.version>2.16.0</jackson.version>`
+
+---
+
+## Test Case 3: Parent POM Update
 
 **Status:** 🧪 Ready for testing
 
-**Vulnerable Dependency:**
-- `jackson-databind:2.9.8` (referenced via `${jackson.version}` property)
-- Known CVEs: Multiple deserialization vulnerabilities
-- Fix version: `2.13.0+`
+**Vulnerable Parent POM:**
+```xml
+<parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>2.5.0</version>  <!-- Vulnerable -->
+</parent>
+```
+
+**Known Issues:**
+- Spring Boot 2.5.0 has multiple CVEs in transitive dependencies
+- Fix version: 2.7.0+
 
 **What to test:**
-1. Frogbot should detect the vulnerability in `jackson-databind`
-2. Frogbot should update the **property** `<jackson.version>` (not the `<version>` tag)
-3. Verify pom.xml property is updated correctly: `<jackson.version>2.9.8</jackson.version>` → `<jackson.version>2.13.x</jackson.version>`
+1. Frogbot should detect vulnerabilities in dependencies inherited from parent POM
+2. Frogbot should update the **parent version** in `<parent><version>` tag
+3. Verify pom.xml parent is updated: `<version>2.5.0</version>` → `<version>2.7.x</version>`
 
 **Expected behavior:**
-The updater should detect that the version uses `${jackson.version}` and update the property definition in `<properties>` section.
+The updater should detect that the vulnerable dependency comes from the parent POM and update the parent version directly.
 
 ---
 
 ## Future Test Cases (TODO)
 
-- Test Case 3: Parent POM update
 - Test Case 4: DependencyManagement
 - Test Case 5: Multi-module project
