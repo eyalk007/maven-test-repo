@@ -18,34 +18,55 @@ Maven test repository for Frogbot integration testing.
 
 ---
 
-## Test Case 3: Parent POM Update
+## Test Case 3: Parent POM Update ⚠️
+
+**Status:** ⚠️ SKIPPED - Engine Limitation
+
+**Issue:** Engine cannot resolve versions inherited from parent POMs (returns `version: unknown`)
+
+**Requires:** Engine enhancement to fetch and parse parent POMs from Maven repositories
+
+---
+
+## Test Case 4: DependencyManagement Update
 
 **Status:** 🧪 Ready for testing
 
-**Vulnerable Parent POM:**
+**Vulnerable Dependency:**
 ```xml
-<parent>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-parent</artifactId>
-    <version>2.5.0</version>  <!-- Vulnerable -->
-</parent>
+<dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <version>1.2.17</version>  <!-- Vulnerable! -->
+        </dependency>
+    </dependencies>
+</dependencyManagement>
+
+<dependencies>
+    <dependency>
+        <groupId>log4j</groupId>
+        <artifactId>log4j</artifactId>
+        <!-- Version from dependencyManagement -->
+    </dependency>
+</dependencies>
 ```
 
 **Known Issues:**
-- Spring Boot 2.5.0 has multiple CVEs in transitive dependencies
-- Fix version: 2.7.0+
+- log4j 1.2.17 has multiple CVEs
+- Fix version: 1.2.18+ (or migrate to log4j2)
 
 **What to test:**
-1. Frogbot should detect vulnerabilities in dependencies inherited from parent POM
-2. Frogbot should update the **parent version** in `<parent><version>` tag
-3. Verify pom.xml parent is updated: `<version>2.5.0</version>` → `<version>2.7.x</version>`
+1. Frogbot should detect vulnerability in log4j:1.2.17
+2. Frogbot should update version in `<dependencyManagement>` section (NOT in `<dependencies>`)
+3. Verify pom.xml is updated: `<version>1.2.17</version>` → `<version>1.2.18</version>` (in dependencyManagement)
 
 **Expected behavior:**
-The updater should detect that the vulnerable dependency comes from the parent POM and update the parent version directly.
+The updater should detect that the version is managed in `<dependencyManagement>` and update it there, not in the `<dependencies>` section which has no version tag.
 
 ---
 
 ## Future Test Cases (TODO)
 
-- Test Case 4: DependencyManagement
 - Test Case 5: Multi-module project
