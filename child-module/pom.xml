@@ -16,23 +16,28 @@
 
     <!-- Dependencies declared here, but versions come from parent's dependencyManagement -->
     <dependencies>
-        <!-- No version specified - will inherit 33.4.8-jre from parent -->
+        <!-- No version specified - inherits vulnerable 31.0-jre from parent (CVE-2020-8908) -->
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
         </dependency>
         
-        <!-- No version specified - will inherit 2.8.9 from parent -->
+        <!-- No version specified - inherits from parent -->
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
         </dependency>
         
-        <!-- This one HAS a version specified directly (overrides parent) -->
+        <!-- No version specified - inherits vulnerable 2.4 from parent -->
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>2.15.0</version>
+        </dependency>
+        
+        <!-- No version specified - inherits vulnerable 2.14.1 from parent (Log4Shell!) -->
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
         </dependency>
     </dependencies>
 
