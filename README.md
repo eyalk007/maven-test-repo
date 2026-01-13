@@ -1,139 +1,100 @@
-# maven-test-repo
+# Maven Parent-Child Dependency Management Test
 
-Maven test repository for Frogbot integration testing.
+This repo demonstrates a problem with vulnerability fixing when Maven dependencies use `<dependencyManagement>` inheritance from parent POMs.
 
-## Test Case 1: Simple Vulnerable Dependency ✅
+## The Scenario
 
-**Status:** ✅ PASSED
-
-**Result:** Frogbot successfully created PR updating `commons-collections:3.2.1` → `3.2.2`
-
----
-
-## Test Case 2: Property-Based Version ✅
-
-**Status:** ✅ PASSED
-
-**Result:** Frogbot successfully updated property `<jackson.version>2.9.8</jackson.version>` → `<jackson.version>2.16.0</jackson.version>`
-
----
-
-## Test Case 3: Parent POM Update ⚠️
-
-**Status:** ⚠️ SKIPPED - Engine Limitation
-
-**Issue:** Engine cannot resolve versions inherited from parent POMs (returns `version: unknown`)
-
-**Requires:** Engine enhancement to fetch and parse parent POMs from Maven repositories
-
----
-
-## Test Case 4: DependencyManagement Update ✅
-
-**Status:** ✅ PASSED
-
-**Result:** Frogbot successfully updated `log4j:1.2.17` → `1.2.17-atlassian-0.4` in dependencyManagement section
-
----
-
-## Test Case 5: Multi-Module Project ✅
-
-**Status:** ✅ PASSED
-
-**Project Structure:**
 ```
-maven-test-repo/
-├── pom.xml                    (parent/aggregator)
-├── backend/
-│   └── pom.xml               (commons-collections:3.2.1 - vulnerable)
-└── frontend/
-    └── pom.xml               (commons-collections:3.2.1 - vulnerable)
+parent-project (pom.xml)
+├── <dependencyManagement>     ← Versions are DEFINED here
+│   └── log4j-core: 2.14.1
+│   └── guava: 31.0-jre
+│   └── gson: 2.8.5
+│   └── commons-io: 2.4
+│
+└── child-module/pom.xml
+    └── <dependencies>         ← Dependencies are DECLARED here (no versions!)
+        └── log4j-core         ← Gets version 2.14.1 from parent
+        └── guava              ← Gets version 31.0-jre from parent
+        └── gson               ← Gets version 2.8.5 from parent
+        └── commons-io         ← Gets version 2.4 from parent
 ```
 
-**Vulnerable Dependency (same in both modules):**
-- `commons-collections:commons-collections:3.2.1`
-- Fix version: `3.2.2`
+## The Problem
 
-**Result:** ✅ PASSED
-- Frogbot detected the SAME vulnerability in BOTH modules
-- Engine returned 2 `ComponentRow` entries:
-  - `Component[0].Location.File = "backend/pom.xml"`
-  - `Component[1].Location.File = "frontend/pom.xml"`
-- Frogbot created **ONE PR** updating **BOTH files**:
-  - `backend/pom.xml`: `3.2.1` → `3.2.2`
-  - `frontend/pom.xml`: `3.2.1` → `3.2.2`
-- **Text-based replacement preserved all formatting!**
-  - No lost namespaces
-  - No lost fields
-  - No reformatting
-  - Only version numbers changed
+### 1. Scanner returns wrong location
 
-**Key Achievement:** Multi-module support with minimal, clean diffs (like Renovate/Dependabot)
+When xray-scan-lib scans this project, it returns:
 
----
-
-## Test Case 6: Non-Standard POM Names ❌
-
-**Status:** ❌ ENGINE LIMITATION
-
-**Test File:** `pom-dev.xml`
-```xml
-<dependency>
-    <groupId>log4j</groupId>
-    <artifactId>log4j</artifactId>
-    <version>1.2.17</version>
-</dependency>
+```json
+{
+  "name": "log4j-core",
+  "version": "2.14.1",
+  "location": "child-module/pom.xml"   // ❌ WRONG - version is not here!
+}
 ```
 
-**Expected:** Engine scans `pom-dev.xml` and detects `log4j:1.2.17`
+But the version `2.14.1` is actually defined in `pom.xml` (parent), not `child-module/pom.xml`.
 
-**Actual Result:** ❌ Engine does NOT scan `pom-dev.xml`
-- SBOM only includes dependencies from standard `pom.xml` files
-- `log4j:1.2.17` not detected
+### 2. Frogbot updater fails
 
-**SBOM Output:**
+When Frogbot tries to fix the vulnerability:
+
+1. It opens `child-module/pom.xml`
+2. Looks for `<version>` tag in the log4j dependency
+3. **Finds nothing** - child pom has no version tag!
+4. Fails with: `dependency org.apache.logging.log4j:log4j-core not found in child-module/pom.xml`
+
+### Actual Error Output
+
 ```
-"gav://com.example:backend:1.0.0",
-"gav://com.example:frontend:1.0.0",
-"gav://commons-collections:commons-collections:3.2.1"
+19:13:34 [Warn] failed to fix vulnerable dependencies:
+failed to update pom.xml files:
+child-module/pom.xml: dependency org.apache.logging.log4j:log4j-core not found in child-module/pom.xml
+child-module/pom.xml: dependency commons-io:commons-io not found in child-module/pom.xml
+child-module/pom.xml: dependency com.google.guava:guava not found in child-module/pom.xml
+child-module/pom.xml: dependency com.google.code.gson:gson not found in child-module/pom.xml
 ```
-Missing: `gav://log4j:log4j:1.2.17`
 
-**Industry Practice:**
-- Projects use `pom-dev.xml`, `pom-prod.xml`, `pom-test.xml` for different environments
-- **Renovate supports** via regex: `/(^|/|\.)pom\.xml$/`
-- **Dependabot supports** non-standard pom names
-- **JFrog Engine does NOT** ❌
+## Why This Happens
 
-**Handler Support:** ✅ Maven handler would work if engine provided the file path  
-**Engine Support:** ❌ Engine does not scan non-standard pom file names
+In Maven, `<dependencyManagement>` is a **version catalog** - it defines versions but doesn't add dependencies:
 
-**Impact:** Enterprise projects using environment-specific POMs won't have those files scanned for vulnerabilities
+| Section | Purpose | Adds dependency to classpath? |
+|---------|---------|------------------------------|
+| `<dependencies>` | Declare actual dependencies | ✅ Yes |
+| `<dependencyManagement>` | Define versions for children | ❌ No (just a catalog) |
 
-**Recommendation:** Engine should scan all Maven POM patterns, not just `pom.xml`
+When a child declares a dependency without a version, Maven resolves it from parent's `<dependencyManagement>`. But the scanner only reports where the `<dependency>` tag is, not where the `<version>` is defined.
 
----
+## The Fix Needed
 
-## Test Summary
+xray-scan-lib should return **where the version is defined**, not just where the dependency is declared:
 
-| Test Case | Feature | Status |
-|-----------|---------|--------|
-| 1. Simple Dependency | Direct `<version>` update | ✅ PASSED |
-| 2. Property Version | `${property}` resolution | ✅ PASSED |
-| 3. Parent POM | Inherited versions | ⚠️ ENGINE LIMITATION |
-| 4. DependencyManagement | Centralized versions | ✅ PASSED |
-| 5. Multi-Module | Multiple files, one PR | ✅ PASSED |
-| 6. Non-Standard POMs | pom-dev.xml, pom-prod.xml | ❌ ENGINE LIMITATION |
+```json
+{
+  "name": "log4j-core", 
+  "version": "2.14.1",
+  "declaredIn": "child-module/pom.xml",     // Where <dependency> tag is
+  "versionDefinedIn": "pom.xml"              // Where <version> comes from ← NEW
+}
+```
 
-**Maven Package Updater: 4/6 scenarios (67% coverage)**
+## Vulnerable Dependencies in This Repo
 
-**Handler is feature-complete!** All failures are engine limitations, not handler issues.
+| Dependency | Version | CVE | Version Location |
+|------------|---------|-----|------------------|
+| log4j-core | 2.14.1 | CVE-2021-44228 (Log4Shell) | `pom.xml` (parent) |
+| guava | 31.0-jre | CVE-2020-8908 | `pom.xml` (parent) |
+| commons-io | 2.4 | CVE-2021-29425 | `pom.xml` (parent) |
+| gson | 2.8.5 | - | `pom.xml` (parent) |
 
----
+## File Structure
 
-## Engine Limitations Summary
-
-1. **Parent POM Resolution** - Cannot resolve versions from external parent POMs
-2. **Non-Standard POM Names** - Only scans `pom.xml`, not `pom-*.xml` patterns
-
-**Both are common enterprise Maven practices that Renovate/Dependabot support.**
+```
+.
+├── pom.xml                      # Parent POM with <dependencyManagement>
+├── child-module/
+│   └── pom.xml                  # Child POM with <dependencies> (no versions)
+└── README.md
+```
